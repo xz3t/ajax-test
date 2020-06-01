@@ -1,9 +1,7 @@
-const baseURL = "https://ci-swapi.herokuapp.com/api/";
-
-function getData(type, cb){
+function getData(url, cb) {
   var xhr = new XMLHttpRequest();
 
-  xhr.open("GET", baseURL + type + "/");
+  xhr.open("GET", url);
   xhr.send();
 
   xhr.onreadystatechange = function () {
@@ -14,34 +12,50 @@ function getData(type, cb){
 }
 
 function getTableHeaders(obj) {
-    var tableHeaders = [];
+  var tableHeaders = [];
 
-    Object.keys(obj).forEach(function(key){
-        tableHeaders.push(`<td>${key}</td>`);
-    });
-    return `<tr>${tableHeaders}</tr>`;
+  Object.keys(obj).forEach(function (key) {
+    tableHeaders.push(`<td>${key}</td>`);
+  });
+  return `<tr>${tableHeaders}</tr>`;
 }
 
-function writeToDocument(type) {
-    var tableRows = [];
-    var el = document.getElementById("data");
-    el.innerHTML = "";
+function generatePaginationButtons(next, prev) {
+  if (next && prev) {
+    return `<button onclick="writeToDocument('${prev}')">Previous</button>
+           <button onclick="writeToDocument('${next}')">Next</button>`;
+  } else if (next && !prev) {
+    return `<button onclick="writeToDocument('${next}')">Next</button>`;
+  } else if (!next && prev) {
+    return `<button onclick="writeToDocument('${prev}')">Previous</button>`;  
+  }
+}
 
-    getData(type, function(data){
-        data = data.results;
-        tableHeaders = getTableHeaders(data[0]);
+function writeToDocument(url) {
+  var tableRows = [];
+  var el = document.getElementById("data");
+  el.innerHTML = "";
 
-        data.forEach(function(item) {
-            var dataRow = [];
-            Object.keys(item).forEach(function(key) {
-                var rowData = item[key].toString();
-                var truncatedData = rowData.substring(0, 15);
-                dataRow.push(`<td>${truncatedData}</td>`);
-            });
+  getData(url, function (data) {
+    var pagination;
+    if (data.next || data.previous) {
+      pagination = generatePaginationButtons(data.next, data.previous);
+    }
 
-            tableRows.push(`<tr>${dataRow}</tr>`);
-           // el.innerHTML += "<p>" + item.name + "</p>";    
-        });
-        el.innerHTML = `<table>${tableHeaders}${tableRows}</table>`
+    data = data.results;
+    tableHeaders = getTableHeaders(data[0]);
+
+    data.forEach(function (item) {
+      var dataRow = [];
+      Object.keys(item).forEach(function (key) {
+        var rowData = item[key].toString();
+        var truncatedData = rowData.substring(0, 15);
+        dataRow.push(`<td>${truncatedData}</td>`);
+      });
+
+      tableRows.push(`<tr>${dataRow}</tr>`);
+      // el.innerHTML += "<p>" + item.name + "</p>";
     });
+    el.innerHTML = `<table>${tableHeaders}${tableRows}</table>${pagination}`;
+  });
 }
